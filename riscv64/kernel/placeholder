@@ -1,0 +1,10 @@
+RISC-V 64-bit Kernel Exploitation Placeholder
+=============================================
+
+This directory is for kernel exploitation techniques
+targeting RISC-V 64-bit architecture.
+
+- RISC-V 64-bit kernel exploitation
+- Privilege mode transitions
+- RV64 exception handling attacks
+- Virtual memory exploitation

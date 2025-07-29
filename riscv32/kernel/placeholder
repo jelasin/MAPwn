@@ -1,0 +1,10 @@
+RISC-V 32-bit Kernel Exploitation Placeholder
+=============================================
+
+This directory is for kernel exploitation techniques
+targeting RISC-V 32-bit architecture.
+
+- RISC-V kernel exploitation
+- Privilege level transitions
+- RV32 exception handling attacks
+- Memory protection bypass

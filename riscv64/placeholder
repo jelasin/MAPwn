@@ -1,0 +1,10 @@
+RISC-V 64-bit Architecture Placeholder
+======================================
+
+This directory contains binary exploitation tools and examples
+specifically designed for RISC-V 64-bit architecture.
+
+Architecture: RISC-V RV64
+Endianness: Little Endian
+Word Size: 64-bit
+Instruction Set: RV64I + Extensions

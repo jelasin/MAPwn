@@ -1,0 +1,10 @@
+RISC-V 32-bit Architecture Placeholder
+======================================
+
+This directory contains binary exploitation tools and examples
+specifically designed for RISC-V 32-bit architecture.
+
+Architecture: RISC-V RV32
+Endianness: Little Endian
+Word Size: 32-bit
+Instruction Set: RV32I + Extensions

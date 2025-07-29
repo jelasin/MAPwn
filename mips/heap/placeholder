@@ -1,0 +1,10 @@
+MIPS Big Endian Heap Exploitation Placeholder
+=============================================
+
+This directory is intended for heap exploitation techniques
+and examples targeting MIPS big endian architecture.
+
+- MIPS heap chunk manipulation
+- Big endian byte order considerations
+- MIPS32-specific malloc exploitation
+- Cache coherency exploitation

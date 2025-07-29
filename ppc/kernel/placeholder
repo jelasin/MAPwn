@@ -1,0 +1,10 @@
+PowerPC Kernel Exploitation Placeholder
+======================================
+
+This directory is for kernel exploitation techniques
+targeting PowerPC architecture.
+
+- PowerPC kernel buffer overflows
+- Privilege escalation techniques
+- PPC exception handling exploitation
+- Memory management exploitation

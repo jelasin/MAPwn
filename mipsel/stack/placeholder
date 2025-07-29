@@ -1,0 +1,10 @@
+MIPS Little Endian Stack Exploitation Placeholder
+=================================================
+
+This directory contains stack-based exploitation techniques
+for MIPS little endian architecture.
+
+- MIPSEL stack overflow techniques
+- Little endian ROP chains
+- Embedded device stack attacks
+- MIPS calling convention exploitation

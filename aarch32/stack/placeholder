@@ -1,0 +1,10 @@
+ARM32 Stack Exploitation Placeholder
+===================================
+
+This directory contains stack-based exploitation techniques
+for ARM32 architecture.
+
+- Stack buffer overflows
+- Return-oriented programming (ROP)
+- ARM32 calling conventions
+- Thumb mode exploitation

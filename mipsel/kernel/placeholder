@@ -1,0 +1,10 @@
+MIPS Little Endian Kernel Exploitation Placeholder
+==================================================
+
+This directory is for kernel exploitation techniques
+targeting MIPS little endian architecture.
+
+- MIPSEL kernel exploitation
+- Embedded device kernel attacks
+- Router/IoT device exploitation
+- Little endian syscall manipulation

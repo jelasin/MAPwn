@@ -1,0 +1,10 @@
+ARM32 IO/File Exploitation Placeholder
+======================================
+
+This directory contains file structure exploitation techniques
+for ARM32 architecture.
+
+- FILE structure attacks
+- Format string vulnerabilities
+- FSOP (File Stream Oriented Programming)
+- ARM32-specific IO manipulation

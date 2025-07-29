@@ -1,0 +1,10 @@
+ARM32 Kernel Exploitation Placeholder
+====================================
+
+This directory is for kernel exploitation techniques
+targeting ARM32 architecture.
+
+- Kernel buffer overflows
+- Privilege escalation exploits
+- ARM32 kernel ROP chains
+- Device driver vulnerabilities

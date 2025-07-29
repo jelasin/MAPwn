@@ -1,0 +1,10 @@
+ARM32 Heap Exploitation Placeholder
+===================================
+
+This directory is intended for heap exploitation techniques
+and examples targeting ARM32 architecture.
+
+- Heap overflow examples
+- Use-after-free exploits
+- Double-free vulnerabilities
+- ARM32-specific heap metadata exploitation

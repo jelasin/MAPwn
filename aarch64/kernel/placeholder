@@ -1,0 +1,10 @@
+ARM64 Kernel Exploitation Placeholder
+====================================
+
+This directory is for kernel exploitation techniques
+targeting ARM64 architecture.
+
+- ARM64 kernel exploit development
+- Exception level transitions
+- Pointer authentication in kernel
+- ARM64 memory management exploitation

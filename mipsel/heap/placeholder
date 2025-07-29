@@ -1,0 +1,10 @@
+MIPS Little Endian Heap Exploitation Placeholder
+================================================
+
+This directory is intended for heap exploitation techniques
+and examples targeting MIPS little endian architecture.
+
+- Little endian heap manipulation
+- MIPSEL-specific chunk corruption
+- Memory layout exploitation
+- Router firmware heap attacks

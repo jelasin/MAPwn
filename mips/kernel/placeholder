@@ -1,0 +1,10 @@
+MIPS Big Endian Kernel Exploitation Placeholder
+===============================================
+
+This directory is for kernel exploitation techniques
+targeting MIPS big endian architecture.
+
+- MIPS kernel buffer overflows
+- Exception handling exploitation
+- TLB manipulation attacks
+- MIPS syscall interface exploitation

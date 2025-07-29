@@ -1,0 +1,10 @@
+MIPS Big Endian Architecture Placeholder
+========================================
+
+This directory contains binary exploitation tools and examples
+specifically designed for MIPS big endian architecture.
+
+Architecture: MIPS32
+Endianness: Big Endian
+Word Size: 32-bit
+Instruction Set: MIPS32
