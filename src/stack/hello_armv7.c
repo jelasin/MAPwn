@@ -1,5 +1,27 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
+
+void back_door() 
+{
+    system("/bin/sh");
+
+    // 使用 volatile 变量来防止编译器优化
+    volatile int never_true = 0;
+    if(never_true) 
+    {
+        __asm__ volatile (
+            "pop {r0-r4, lr}        \n\t"  // 从栈中恢复寄存器
+            "bx lr                  \n\t"  // 跳转到lr寄存器地址
+            "pop {r7, lr}           \n\t"  // 备用指令：恢复r7和lr
+            "bx lr                  \n\t"  // 备用指令：跳转返回
+            "svc #0                 \n\t"  // 系统调用
+            :
+            :
+            : "memory"
+        );
+    }
+}
 
 void init_io()
 {

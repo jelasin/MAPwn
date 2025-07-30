@@ -31,10 +31,26 @@ drwxr-xr-x 9 ub24 ub24 4.0K Aug 18  2024 riscv32-ilp32d--glibc--stable-2024.05-1
 drwxr-xr-x 9 ub24 ub24 4.0K Aug 18  2024 riscv64-lp64d--glibc--stable-2024.05-1
 ```
 
-## stack
+需要将交叉编译工具链放在项目根目录下, 各架构下的lib目录才能软连接到对应的sysroot。
 
-```bash
-make -f stack.mk all
+以armv7-eabihf为例:
+
+```text
+➜  stack git:(master) ✗ ls -lh
+total 40K
+-rw-r--r-- 1 ub24 ub24  14K Jul 30 16:18 README.md
+-rw-r--r-- 1 ub24 ub24 1.1K Jul 30 17:56 exp.py
+-rwxr-xr-x 1 ub24 ub24   84 Jul 30 17:17 gdb.sh
+-rwxr-xr-x 1 ub24 ub24  12K Jul 30 17:51 hello
+lrwxrwxrwx 1 ub24 ub24   91 Jul 30 17:56 lib -> ../../toolchain/armv7-eabihf--glibc--stable-2024.05-1/arm-buildroot-linux-gnueabihf/sysroot
 ```
 
-会在每个架构目录下对应子目录生成动态链接和静态链接两个文件。
+## stack
+
+arch 取值为 `armv7`, `aarch64`, `mips`, `mipsel`, `ppc`, `rv32`, `rv64`。
+
+其中 armv7 为对应 aarch32 的子目录。
+
+```bash
+make -f stack.mk {arch}
+```

@@ -1,142 +1,182 @@
-# Multi-Architecture Cross-Compilation Makefile
-# Author: Jelasin
-# Date: July 29, 2025
+# Multi-architecture Makefile for stack exploitation binaries
+# 支持多架构编译，关闭 PIE 和 canary 保护
 
-# Source file
-SRC_FILE = src/stack/hello.c
+# 工具链配置
+TOOLCHAIN_BASE = toolchain
 
-# Toolchain directory
-TOOLCHAIN_DIR = toolchain
+# ARM v7 (32-bit) 工具链
+ARMV7_TOOLCHAIN = $(TOOLCHAIN_BASE)/armv7-eabihf--glibc--stable-2024.05-1
+ARMV7_CC = $(ARMV7_TOOLCHAIN)/bin/arm-buildroot-linux-gnueabihf-gcc
+ARMV7_READELF = $(ARMV7_TOOLCHAIN)/bin/arm-buildroot-linux-gnueabihf-readelf
+ARMV7_OBJDUMP = $(ARMV7_TOOLCHAIN)/bin/arm-buildroot-linux-gnueabihf-objdump
 
-# Architecture definitions
-AARCH64_TOOLCHAIN = $(TOOLCHAIN_DIR)/aarch64--glibc--stable-2024.05-1/bin/aarch64-linux-gcc
-AARCH32_TOOLCHAIN = $(TOOLCHAIN_DIR)/armv7-eabihf--glibc--stable-2024.05-1/bin/arm-linux-gcc
-MIPS_TOOLCHAIN = $(TOOLCHAIN_DIR)/mips32--glibc--stable-2024.05-1/bin/mips-linux-gcc
-MIPSEL_TOOLCHAIN = $(TOOLCHAIN_DIR)/mips32el--glibc--stable-2024.05-1/bin/mipsel-linux-gcc
-PPC_TOOLCHAIN = $(TOOLCHAIN_DIR)/powerpc-440fp--glibc--stable-2024.05-1/bin/powerpc-linux-gcc
-RISCV32_TOOLCHAIN = $(TOOLCHAIN_DIR)/riscv32-ilp32d--glibc--stable-2024.05-1/bin/riscv32-linux-gcc
-RISCV64_TOOLCHAIN = $(TOOLCHAIN_DIR)/riscv64-lp64d--glibc--stable-2024.05-1/bin/riscv64-linux-gcc
+# ARM v8 (64-bit) 工具链
+AARCH64_TOOLCHAIN = $(TOOLCHAIN_BASE)/aarch64--glibc--stable-2024.05-1
+AARCH64_CC = $(AARCH64_TOOLCHAIN)/bin/aarch64-buildroot-linux-gnu-gcc
+AARCH64_READELF = $(AARCH64_TOOLCHAIN)/bin/aarch64-buildroot-linux-gnu-readelf
+AARCH64_OBJDUMP = $(AARCH64_TOOLCHAIN)/bin/aarch64-buildroot-linux-gnu-objdump
 
-# Compiler flags
-CFLAGS = -no-pie -fno-stack-protector -O0 -g
-LDFLAGS_STATIC = -static
-LDFLAGS_DYNAMIC = 
+# MIPS (32-bit big endian) 工具链
+MIPS_TOOLCHAIN = $(TOOLCHAIN_BASE)/mips32--glibc--stable-2024.05-1
+MIPS_CC = $(MIPS_TOOLCHAIN)/bin/mips-buildroot-linux-gnu-gcc
+MIPS_READELF = $(MIPS_TOOLCHAIN)/bin/mips-buildroot-linux-gnu-readelf
+MIPS_OBJDUMP = $(MIPS_TOOLCHAIN)/bin/mips-buildroot-linux-gnu-objdump
 
-# Output directories
-AARCH64_DIR = aarch64/stack
-AARCH32_DIR = aarch32/stack
-MIPS_DIR = mips/stack
-MIPSEL_DIR = mipsel/stack
-PPC_DIR = ppc/stack
-RISCV32_DIR = riscv32/stack
-RISCV64_DIR = riscv64/stack
+# MIPS (32-bit little endian) 工具链
+MIPSEL_TOOLCHAIN = $(TOOLCHAIN_BASE)/mips32el--glibc--stable-2024.05-1
+MIPSEL_CC = $(MIPSEL_TOOLCHAIN)/bin/mipsel-buildroot-linux-gnu-gcc
+MIPSEL_READELF = $(MIPSEL_TOOLCHAIN)/bin/mipsel-buildroot-linux-gnu-readelf
+MIPSEL_OBJDUMP = $(MIPSEL_TOOLCHAIN)/bin/mipsel-buildroot-linux-gnu-objdump
 
-# Default target
-.PHONY: all stack-hello clean help
+# PowerPC 工具链
+PPC_TOOLCHAIN = $(TOOLCHAIN_BASE)/powerpc-440fp--glibc--stable-2024.05-1
+PPC_CC = $(PPC_TOOLCHAIN)/bin/powerpc-buildroot-linux-gnu-gcc
+PPC_READELF = $(PPC_TOOLCHAIN)/bin/powerpc-buildroot-linux-gnu-readelf
+PPC_OBJDUMP = $(PPC_TOOLCHAIN)/bin/powerpc-buildroot-linux-gnu-objdump
 
-all: stack-hello
+# RISC-V 32-bit 工具链
+RV32_TOOLCHAIN = $(TOOLCHAIN_BASE)/riscv32-ilp32d--glibc--stable-2024.05-1
+RV32_CC = $(RV32_TOOLCHAIN)/bin/riscv32-buildroot-linux-gnu-gcc
+RV32_READELF = $(RV32_TOOLCHAIN)/bin/riscv32-buildroot-linux-gnu-readelf
+RV32_OBJDUMP = $(RV32_TOOLCHAIN)/bin/riscv32-buildroot-linux-gnu-objdump
 
-stack-hello: stack-hello-aarch64 stack-hello-aarch32 stack-hello-mips stack-hello-mipsel stack-hello-ppc stack-hello-riscv32 stack-hello-riscv64
+# RISC-V 64-bit 工具链
+RV64_TOOLCHAIN = $(TOOLCHAIN_BASE)/riscv64-lp64d--glibc--stable-2024.05-1
+RV64_CC = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-gcc
+RV64_READELF = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-readelf
+RV64_OBJDUMP = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-objdump
 
-# AArch64 targets
-stack-hello-aarch64: $(AARCH64_DIR)/hello_dyn $(AARCH64_DIR)/hello_static
+# 通用编译选项
+# -fno-pie: 关闭 PIE (Position Independent Executable)
+# -no-pie: 关闭 PIE 链接选项
+# -fno-stack-protector: 关闭 stack canary 保护
+# -O0: 关闭优化，便于调试
+# -g: 包含调试信息
+COMMON_CFLAGS = -fno-pie -no-pie -fno-stack-protector -O0 -g
 
-$(AARCH64_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building AArch64 dynamic binary..."
-	$(AARCH64_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
+# 架构特定目标
+hello_armv7: aarch32/stack/hello
+hello_aarch64: aarch64/stack/hello
+hello_mips: mips/stack/hello
+hello_mipsel: mipsel/stack/hello
+hello_ppc: ppc/stack/hello
+hello_rv32: riscv32/stack/hello
+hello_rv64: riscv64/stack/hello
 
-$(AARCH64_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building AArch64 static binary..."
-	$(AARCH64_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
+# ARM v7 编译规则
+aarch32/stack/hello: src/stack/hello_armv7.c
+	@echo "Compiling for ARM v7 (32-bit)..."
+	@mkdir -p aarch32/stack
+	$(ARMV7_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "ARM v7 compilation successful: $@"
 
-# AArch32 targets
-stack-hello-aarch32: $(AARCH32_DIR)/hello_dyn $(AARCH32_DIR)/hello_static
+# ARM v8 (AArch64) 编译规则
+aarch64/stack/hello: src/stack/hello_aarch64.c
+	@echo "Compiling for ARM v8 (64-bit)..."
+	@mkdir -p aarch64/stack
+	$(AARCH64_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "AArch64 compilation successful: $@"
 
-$(AARCH32_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building AArch32 dynamic binary..."
-	$(AARCH32_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
+# MIPS 编译规则
+mips/stack/hello: src/stack/hello_mips.c
+	@echo "Compiling for MIPS (32-bit big endian)..."
+	@mkdir -p mips/stack
+	$(MIPS_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "MIPS compilation successful: $@"
 
-$(AARCH32_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building AArch32 static binary..."
-	$(AARCH32_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
+# MIPS Little Endian 编译规则
+mipsel/stack/hello: src/stack/hello_mipsel.c
+	@echo "Compiling for MIPS (32-bit little endian)..."
+	@mkdir -p mipsel/stack
+	$(MIPSEL_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "MIPSEL compilation successful: $@"
 
-# MIPS targets
-stack-hello-mips: $(MIPS_DIR)/hello_dyn $(MIPS_DIR)/hello_static
+# PowerPC 编译规则
+ppc/stack/hello: src/stack/hello_ppc.c
+	@echo "Compiling for PowerPC..."
+	@mkdir -p ppc/stack
+	$(PPC_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "PowerPC compilation successful: $@"
 
-$(MIPS_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building MIPS dynamic binary..."
-	$(MIPS_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
+# RISC-V 32-bit 编译规则
+riscv32/stack/hello: src/stack/hello_rv32.c
+	@echo "Compiling for RISC-V 32-bit..."
+	@mkdir -p riscv32/stack
+	$(RV32_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "RISC-V 32-bit compilation successful: $@"
 
-$(MIPS_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building MIPS static binary..."
-	$(MIPS_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
+# RISC-V 64-bit 编译规则
+riscv64/stack/hello: src/stack/hello_rv64.c
+	@echo "Compiling for RISC-V 64-bit..."
+	@mkdir -p riscv64/stack
+	$(RV64_CC) $(COMMON_CFLAGS) -o $@ $<
+	@echo "RISC-V 64-bit compilation successful: $@"
 
-# MIPSEL targets
-stack-hello-mipsel: $(MIPSEL_DIR)/hello_dyn $(MIPSEL_DIR)/hello_static
-
-$(MIPSEL_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building MIPSEL dynamic binary..."
-	$(MIPSEL_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
-
-$(MIPSEL_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building MIPSEL static binary..."
-	$(MIPSEL_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
-
-# PowerPC targets
-stack-hello-ppc: $(PPC_DIR)/hello_dyn $(PPC_DIR)/hello_static
-
-$(PPC_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building PowerPC dynamic binary..."
-	$(PPC_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
-
-$(PPC_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building PowerPC static binary..."
-	$(PPC_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
-
-# RISC-V 32-bit targets
-stack-hello-riscv32: $(RISCV32_DIR)/hello_dyn $(RISCV32_DIR)/hello_static
-
-$(RISCV32_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building RISC-V 32-bit dynamic binary..."
-	$(RISCV32_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
-
-$(RISCV32_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building RISC-V 32-bit static binary..."
-	$(RISCV32_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
-
-# RISC-V 64-bit targets
-stack-hello-riscv64: $(RISCV64_DIR)/hello_dyn $(RISCV64_DIR)/hello_static
-
-$(RISCV64_DIR)/hello_dyn: $(SRC_FILE)
-	@echo "Building RISC-V 64-bit dynamic binary..."
-	$(RISCV64_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_DYNAMIC) -o $@ $<
-
-$(RISCV64_DIR)/hello_static: $(SRC_FILE)
-	@echo "Building RISC-V 64-bit static binary..."
-	$(RISCV64_TOOLCHAIN) $(CFLAGS) $(LDFLAGS_STATIC) -o $@ $<
-
-# Clean targets
+# 清理所有目标
 clean:
-	@echo "Cleaning all binaries..."
-	rm -f $(AARCH64_DIR)/hello_dyn $(AARCH64_DIR)/hello_static
-	rm -f $(AARCH32_DIR)/hello_dyn $(AARCH32_DIR)/hello_static
-	rm -f $(MIPS_DIR)/hello_dyn $(MIPS_DIR)/hello_static
-	rm -f $(MIPSEL_DIR)/hello_dyn $(MIPSEL_DIR)/hello_static
-	rm -f $(PPC_DIR)/hello_dyn $(PPC_DIR)/hello_static
-	rm -f $(RISCV32_DIR)/hello_dyn $(RISCV32_DIR)/hello_static
-	rm -f $(RISCV64_DIR)/hello_dyn $(RISCV64_DIR)/hello_static
+	@echo "Cleaning all stack binaries..."
+	@rm -f aarch32/stack/hello
+	@rm -f aarch64/stack/hello
+	@rm -f mips/stack/hello
+	@rm -f mipsel/stack/hello
+	@rm -f ppc/stack/hello
+	@rm -f riscv32/stack/hello
+	@rm -f riscv64/stack/hello
+	@echo "Clean complete"
 
-# Help target
-help:
-	@echo "Available targets:"
-	@echo "  all              - Build all architectures (same as stack-hello)"
-	@echo "  stack-hello      - Build hello binaries for all architectures"
-	@echo "  stack-hello-<arch> - Build hello binaries for specific architecture"
-	@echo "                     Available architectures: aarch64, aarch32, mips, mipsel, ppc, riscv32, riscv64"
-	@echo "  clean            - Remove all built binaries"
-	@echo "  help             - Show this help message"
+# 编译所有架构
+all: hello_armv7 hello_aarch64 hello_mips hello_mipsel hello_ppc hello_rv32 hello_rv64
+
+# 二进制文件信息函数
+define show_binary_info
+	@echo "=== Binary information for $(1) ==="
+	@if [ -f "$(1)" ]; then \
+		file $(1); \
+		echo "Security features:"; \
+		$(2) -h $(1) | grep -E "(Type|Entry)" || true; \
+		echo "Checking for stack canary and PIE:"; \
+		$(3) -t $(1) | grep -E "(stack_chk|__stack_chk)" >/dev/null 2>&1 && echo "Stack canary detected (bad)" || echo "No stack canary found (good)"; \
+		$(2) -h $(1) | grep "Type:" | grep -q "EXEC" && echo "PIE disabled (good)" || echo "PIE may be enabled"; \
+	else \
+		echo "Binary $(1) not found. Run the corresponding target first."; \
+	fi
 	@echo ""
-	@echo "Example usage:"
-	@echo "  make stack-hello          # Build for all architectures"
-	@echo "  make stack-hello-aarch64  # Build only for AArch64"
-	@echo "  make clean                # Clean all binaries"
+endef
+
+# 显示各架构二进制文件信息
+info:
+	$(call show_binary_info,aarch32/stack/hello,$(ARMV7_READELF),$(ARMV7_OBJDUMP))
+	$(call show_binary_info,aarch64/stack/hello,$(AARCH64_READELF),$(AARCH64_OBJDUMP))
+	$(call show_binary_info,mips/stack/hello,$(MIPS_READELF),$(MIPS_OBJDUMP))
+	$(call show_binary_info,mipsel/stack/hello,$(MIPSEL_READELF),$(MIPSEL_OBJDUMP))
+	$(call show_binary_info,ppc/stack/hello,$(PPC_READELF),$(PPC_OBJDUMP))
+	$(call show_binary_info,riscv32/stack/hello,$(RV32_READELF),$(RV32_OBJDUMP))
+	$(call show_binary_info,riscv64/stack/hello,$(RV64_READELF),$(RV64_OBJDUMP))
+
+# 帮助信息
+help:
+	@echo "Multi-architecture Stack Exploitation Makefile"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  hello_armv7   - Compile for ARM v7 (32-bit)"
+	@echo "  hello_aarch64 - Compile for ARM v8 (64-bit)"
+	@echo "  hello_mips    - Compile for MIPS (32-bit big endian)"
+	@echo "  hello_mipsel  - Compile for MIPS (32-bit little endian)"
+	@echo "  hello_ppc     - Compile for PowerPC"
+	@echo "  hello_rv32    - Compile for RISC-V 32-bit"
+	@echo "  hello_rv64    - Compile for RISC-V 64-bit"
+	@echo "  all           - Compile for all architectures"
+	@echo "  clean         - Remove all compiled binaries"
+	@echo "  info          - Show binary information and security features"
+	@echo "  help          - Show this help message"
+	@echo ""
+	@echo "Source files expected:"
+	@echo "  src/stack/hello_armv7.c   (exists)"
+	@echo "  src/stack/hello_aarch64.c (to be created)"
+	@echo "  src/stack/hello_mips.c    (to be created)"
+	@echo "  src/stack/hello_mipsel.c  (to be created)"
+	@echo "  src/stack/hello_ppc.c     (to be created)"
+	@echo "  src/stack/hello_rv32.c    (to be created)"
+	@echo "  src/stack/hello_rv64.c    (to be created)"
+
+.PHONY: hello_armv7 hello_aarch64 hello_mips hello_mipsel hello_ppc hello_rv32 hello_rv64 all clean info help
