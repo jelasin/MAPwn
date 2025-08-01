@@ -11,11 +11,13 @@ void back_door()
     if(never_true) 
     {
         __asm__ volatile (
-            "pop {r0-r4, lr}        \n\t"  // 从栈中恢复寄存器
-            "bx lr                  \n\t"  // 跳转到lr寄存器地址
-            "pop {r7, lr}           \n\t"  // 备用指令：恢复r7和lr
-            "bx lr                  \n\t"  // 备用指令：跳转返回
-            "svc #0                 \n\t"  // 系统调用
+            "pop {r0-r4, lr}        \n\t"
+            "bx lr                  \n\t"
+            "pop {r7, lr}           \n\t"
+            "bx lr                  \n\t"
+            "svc #0                 \n\t"
+            "pop {r3, lr}           \n\t"
+            "bx r3                  \n\t"
             :
             :
             : "memory"
