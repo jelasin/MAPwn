@@ -11,21 +11,21 @@ void back_door()
     if(never_true) 
     {
         __asm__ volatile (
-            "lw a0, 0(sp)           \n\t"
-            "lw a1, 4(sp)           \n\t"
-            "addi sp, sp, 8         \n\t"
-            "lw a2, 0(sp)           \n\t"
-            "lw ra, 4(sp)           \n\t"
-            "addi sp, sp, 8         \n\t"
+            "ld a0, 0(sp)           \n\t"
+            "ld a1, 8(sp)           \n\t"
+            "addi sp, sp, 16        \n\t"
+            "ld a2, 0(sp)           \n\t"
+            "ld ra, 8(sp)           \n\t"
+            "addi sp, sp, 16        \n\t"
             "jr ra                  \n\t"
-            "lw a7, 0(sp)           \n\t"
-            "lw ra, 4(sp)           \n\t"
-            "addi sp, sp, 8         \n\t"
+            "ld a7, 0(sp)           \n\t"
+            "ld ra, 8(sp)           \n\t"
+            "addi sp, sp, 16        \n\t"
             "jr ra                  \n\t"
             "ecall                  \n\t"
-            "lw t0, 0(sp)           \n\t"
-            "lw ra, 4(sp)           \n\t"
-            "addi sp, sp, 8         \n\t"
+            "ld t0, 0(sp)           \n\t"
+            "ld ra, 8(sp)           \n\t"
+            "addi sp, sp, 16        \n\t"
             "jr t0                  \n\t"
             :
             :
