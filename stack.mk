@@ -172,11 +172,11 @@ help:
 	@echo ""
 	@echo "Source files expected:"
 	@echo "  src/stack/hello_armv7.c   (exists)"
-	@echo "  src/stack/hello_aarch64.c (to be created)"
-	@echo "  src/stack/hello_mips.c    (to be created)"
-	@echo "  src/stack/hello_mipsel.c  (to be created)"
-	@echo "  src/stack/hello_ppc.c     (to be created)"
-	@echo "  src/stack/hello_rv32.c    (to be created)"
-	@echo "  src/stack/hello_rv64.c    (to be created)"
+	@echo "  src/stack/hello_aarch64.c (exists)"
+	@echo "  src/stack/hello_mips.c    (exists)"
+	@echo "  src/stack/hello_mipsel.c  (exists)"
+	@echo "  src/stack/hello_ppc.c     (exists)"
+	@echo "  src/stack/hello_rv32.c    (exists)"
+	@echo "  src/stack/hello_rv64.c    (exists)"
 
 .PHONY: hello_armv7 hello_aarch64 hello_mips hello_mipsel hello_ppc hello_rv32 hello_rv64 all clean info help
