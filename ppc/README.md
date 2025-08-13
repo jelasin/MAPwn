@@ -5,50 +5,34 @@
 ### 通用寄存器 (r0-r31)
 
 ```text
-r0       : 特殊用途寄存器 (在某些指令中为0)
-r1       : 栈指针 (SP)
-r2       : 保留/系统使用
-r3-r10   : 参数传递/返回值寄存器
-r11-r12  : 临时寄存器
-r13-r31  : 保存寄存器
+r0       : 通用；在某些编码形式里被解释为常量0/省略寄存器，但不是硬连0
+r1       : 栈指针 (SP)，帧首(高地址)常保存上一帧 r1 形成回链
+r2       : TOC/小数据区锚 (ABI 相关)；32-bit SysV 可保留
+r3-r10   : 参数/返回值通用寄存器 (按序放置整数/指针)
+r11-r12  : 调用者保存临时 (scratch)；PLT/跳板可用
+r13      : 线程指针/小数据区指针 (不要随意破坏)
+r14-r31  : 被调用者保存 (callee-saved)
 ```
 
 ### 寄存器别名和用途
 
 ```text
-寄存器  别名  用途                      调用约定
-r0      -     特殊用途/零值              特殊
-r1      sp    栈指针                    N/A
-r2      -     保留/TOC指针              N/A
-r3      -     第1个参数/返回值           调用者保存
-r4      -     第2个参数                 调用者保存
-r5      -     第3个参数                 调用者保存
-r6      -     第4个参数                 调用者保存
-r7      -     第5个参数                 调用者保存
-r8      -     第6个参数                 调用者保存
-r9      -     第7个参数                 调用者保存
-r10     -     第8个参数                 调用者保存
-r11     -     临时寄存器                调用者保存
-r12     -     临时寄存器                调用者保存
-r13     -     保存寄存器                被调用者保存
-r14     -     保存寄存器                被调用者保存
-r15     -     保存寄存器                被调用者保存
-r16     -     保存寄存器                被调用者保存
-r17     -     保存寄存器                被调用者保存
-r18     -     保存寄存器                被调用者保存
-r19     -     保存寄存器                被调用者保存
-r20     -     保存寄存器                被调用者保存
-r21     -     保存寄存器                被调用者保存
-r22     -     保存寄存器                被调用者保存
-r23     -     保存寄存器                被调用者保存
-r24     -     保存寄存器                被调用者保存
-r25     -     保存寄存器                被调用者保存
-r26     -     保存寄存器                被调用者保存
-r27     -     保存寄存器                被调用者保存
-r28     -     保存寄存器                被调用者保存
-r29     -     保存寄存器                被调用者保存
-r30     -     保存寄存器                被调用者保存
-r31     -     保存寄存器                被调用者保存
+寄存器  别名  用途/备注                                 调用约定
+r0      -     通用(某些形式伪零)                        调用者保存
+r1      sp    栈指针/帧回链                             N/A
+r2      toc   TOC/小数据区锚                            保留
+r3      -     第1参数 / 返回值                          调用者保存
+r4      -     第2参数                                   调用者保存
+r5      -     第3参数                                   调用者保存
+r6      -     第4参数                                   调用者保存
+r7      -     第5参数                                   调用者保存
+r8      -     第6参数                                   调用者保存
+r9      -     第7参数                                   调用者保存
+r10     -     第8参数 / 环境指针(视ABI)                 调用者保存
+r11     -     临时/PLT 辅助                             调用者保存
+r12     -     临时/系统调用入口可能使用                 调用者保存
+r13     tp    线程指针 / SDA2 (ABI)                     保留
+r14-r31 -     被调用者保存 (需成对保存/恢复)             被调用者保存
 ```
 
 ### 浮点寄存器 (f0-f31)
@@ -138,11 +122,14 @@ CR2-CR7: 用户定义的条件
 [系统调用查询](https://gpages.juszkiewicz.com.pl/syscalls-table/syscalls.html)
 
 ```text
-系统调用号：r0
-参数1-6：  r3, r4, r5, r6, r7, r8
-返回值：    r3
-调用指令：  sc (System Call)
+系统调用号: r0
+参数1-6  : r3, r4, r5, r6, r7, r8
+返回值   : r3 (>=0 成功; <0 且 |值| < 4096 时表示 -errno)
+调用指令 : sc (System Call)
+错误处理 : 失败时用户空间将 -r3 取正作为 errno
 ```
+
+> 说明: 一些早期资料提到通过 CR0.SO 判断错误；Linux 用户态常规以 r3 负值为准。
 
 ### 系统调用示例
 
@@ -168,7 +155,7 @@ sc
 ```text
 前8个参数：r3, r4, r5, r6, r7, r8, r9, r10
 超过8个：  通过栈传递
-返回值：   r3 (32位), r3+r4 (64位)
+返回值：   r3；需要 64 位(在32位ABI)时用 r3:r4 组合；复杂/聚合类型通过隐藏指针(首参数)返回
 浮点参数： f1-f8
 浮点返回： f1
 ```
@@ -193,38 +180,29 @@ sc
 ### 函数调用流程
 
 ```assembly
-; 调用者 (Caller)
-stwu r1, -64(r1)    ; 分配栈空间并更新栈指针
-mflr r0             ; 获取链接寄存器
-stw r0, 68(r1)      ; 保存返回地址
+; ---- 调用者 (Caller) ----
+    li  r3, arg1        ; 参数1
+    li  r4, arg2        ; 参数2
+    bl  function        ; 跳转并链接
+    ; 返回后 r3 = 返回值
 
-li r3, arg1         ; 设置参数1
-li r4, arg2         ; 设置参数2
-bl function         ; 调用函数
-
-lwz r0, 68(r1)      ; 恢复返回地址
-mtlr r0             ; 设置链接寄存器
-addi r1, r1, 64     ; 释放栈空间
-; r3 包含返回值
-
-; 被调用者 (Callee)
+; ---- 被调用者 (Callee) 标准栈帧 ----
 function:
-stwu r1, -96(r1)    ; 分配栈空间
-mflr r0             ; 获取返回地址
-stw r0, 100(r1)     ; 保存返回地址
-stw r31, 92(r1)     ; 保存需要使用的寄存器
-
-; 函数体
-; 参数在 r3-r10 中
-; 局部变量使用栈空间
-
-li r3, return_val   ; 设置返回值
-lwz r31, 92(r1)     ; 恢复寄存器
-lwz r0, 100(r1)     ; 恢复返回地址
-mtlr r0             ; 设置链接寄存器
-addi r1, r1, 96     ; 释放栈空间
-blr                 ; 返回
+    mflr r0             ; 保存返回地址到 r0
+    stwu r1,-32(r1)     ; 新建 32B 栈帧 (16B 对齐，可根据需要扩大)
+    stw  r0, 8(r1)      ; 保存 LR (示例槽位)
+    stw  r31,12(r1)     ; 保存被调用者保存寄存器
+    mr  r31,r3          ; 例: 缓存第一个参数
+    ; ... 函数主体 ...
+    li  r3, return_val  ; 设置返回值
+    lwz r31,12(r1)      ; 恢复寄存器
+    lwz r0, 8(r1)       ; 取回 LR
+    mtlr r0
+    addi r1,r1,32       ; 弹栈
+    blr                 ; 返回
 ```
+
+> 说明: 原示例使用越界偏移保存 LR 且未体现回链布局，已修正为简洁且符合常见 ABI 习惯的形式。
 
 ## 指令集合
 
@@ -273,8 +251,9 @@ PowerPC 指令主要分为以下几种格式：
 | add | add rD, rA, rB | rD = rA + rB | `add r3, r4, r5` | 加法运算 |
 | addi | addi rD, rA, SIMM | rD = rA + SIMM | `addi r3, r4, 100` | 立即数加法 |
 | addis | addis rD, rA, SIMM | rD = rA + (SIMM<<16) | `addis r3, r4, 1` | 立即数左移后加法 |
-| sub | sub rD, rA, rB | rD = rB - rA | `sub r3, r4, r5` | 减法运算 |
-| subi | subi rD, rA, SIMM | rD = rA - SIMM | `subi r3, r4, 100` | 立即数减法 |
+| subf | subf rD, rA, rB | rD = rB - rA | `subf r3, r4, r5` | 减法(真实指令) |
+| sub (伪) | sub rD, rA, rB | rD = rA - rB | `sub r3, r4, r5` | 伪指令 → subf rD, rB, rA |
+| subi (伪) | subi rD, rA, SIMM | rD = rA - SIMM | `subi r3, r4, 100` | 伪指令 → addi rD, rA, -SIMM |
 | mullw | mullw rD, rA, rB | rD = rA * rB | `mullw r3, r4, r5` | 32位乘法 |
 | mulhw | mulhw rD, rA, rB | rD = (rA*rB)\[0:31\] | `mulhw r3, r4, r5` | 乘法高位 |
 | divw | divw rD, rA, rB | rD = rA / rB | `divw r3, r4, r5` | 有符号除法 |
@@ -728,3 +707,41 @@ stwux r3, r4, r5    ; 索引存储并更新 MEM[r4+r5] = r3; r4 += r5
 ```
 
 这些编程模式涵盖了PowerPC汇编中最常用的结构和技巧，包括PowerPC架构特有的循环移位、条件寄存器操作和多样化的寻址模式，可以作为编写PowerPC汇编程序的参考模板。
+
+### 伪指令与展开
+
+| 伪指令 | 展开 | 说明 |
+|--------|------|------|
+| li rD,IMM | addi rD,r0,IMM | 16位有符号立即数装载；大常量需 lis/ori 组合 |
+| lis rD,IMM | addis rD,r0,IMM | 载入高 16 位 (IMM<<16) |
+| mr rD,rS | or rD,rS,rS | 自拷贝实现寄存器移动 |
+| sub rD,rA,rB | subf rD,rB,rA | 语义 rD=rA-rB |
+| subi rD,rA,IMM | addi rD,rA,-IMM | 立即数取负实现减法 |
+| nop | ori 0,0,0 | 空操作 |
+
+### 系统调用错误快速判断
+
+执行 sc 后：
+
+1. r3 >= 0 表示成功返回值。
+2. r3 为负且 |r3| < 4096 视为 -errno，用户态应取 -r3 设为 errno。
+3. 不需再检查 CR0.SO；glibc/musl 封装已处理。
+
+### 常见调试寄存器检查片段
+
+```assembly
+sc              ; 发起系统调用
+cmpwi r3,0      ; 比较返回值
+blt  handle_err ; 若 <0 则错误
+; 成功路径...
+handle_err:
+neg  r4,r3      ; r4 = errno 值
+```
+
+### 参考资料
+
+* Power Architecture 32-bit / 64-bit ELF ABI
+* Linux kernel arch/powerpc/include/uapi/asm/unistd.h
+* IBM Power ISA v3.x Reference
+* GCC Inline Assembly for PowerPC 文档
+* ELFv2 ABI Supplement

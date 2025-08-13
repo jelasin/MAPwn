@@ -133,48 +133,51 @@ swap_endian16:
 
 ## Linux MIPSEL 系统调用表
 
-### 常用系统调用号
+> 重要: 下面常见的“11 = execve”这种写法是“通用/逻辑序号(偏移)”。在 MIPS O32 ABI 下, 真正放入 $v0 的值是 `4000 + 偏移`。即: `__NR_O32_Linux = 4000`，`__NR_execve = 4011`。
+
+### 常用系统调用号 (偏移 / 实际 O32 号)
 
 ```c
-#define __NR_syscall                 0
-#define __NR_exit                    1
-#define __NR_fork                    2
-#define __NR_read                    3
-#define __NR_write                   4
-#define __NR_open                    5
-#define __NR_close                   6
-#define __NR_waitpid                 7
-#define __NR_creat                   8
-#define __NR_link                    9
-#define __NR_unlink                 10
-#define __NR_execve                 11
-#define __NR_chdir                  12
-#define __NR_time                   13
-#define __NR_mknod                  14
-#define __NR_chmod                  15
-#define __NR_lchown                 16
-#define __NR_lseek                  19
-#define __NR_getpid                 20
-#define __NR_mount                  21
-#define __NR_umount                 22
-#define __NR_setuid                 23
-#define __NR_getuid                 24
-#define __NR_kill                   37
-#define __NR_mkdir                  39
-#define __NR_rmdir                  40
-#define __NR_dup                    41
-#define __NR_pipe                   42
-#define __NR_brk                    45
-#define __NR_ioctl                  54
-#define __NR_mmap                   90
-#define __NR_munmap                 91
-#define __NR_mprotect              125
-#define __NR_socket                183
-#define __NR_bind                  184
-#define __NR_connect               185
-#define __NR_listen                186
-#define __NR_accept                187
+#define __NR_O32_Linux              4000 /* 基址 */
+/* 偏移  实际号   名称 */
+#define __NR_read        3   /* 4003 */
+#define __NR_write       4   /* 4004 */
+#define __NR_open        5   /* 4005 */
+#define __NR_close       6   /* 4006 */
+#define __NR_waitpid     7   /* 4007 */
+#define __NR_creat       8   /* 4008 */
+#define __NR_link        9   /* 4009 */
+#define __NR_unlink     10   /* 4010 */
+#define __NR_execve     11   /* 4011 */
+#define __NR_chdir      12   /* 4012 */
+#define __NR_time       13   /* 4013 */
+#define __NR_mknod      14   /* 4014 */
+#define __NR_chmod      15   /* 4015 */
+#define __NR_lchown     16   /* 4016 */
+#define __NR_lseek      19   /* 4019 */
+#define __NR_getpid     20   /* 4020 */
+#define __NR_mount      21   /* 4021 */
+#define __NR_umount     22   /* 4022 */
+#define __NR_setuid     23   /* 4023 */
+#define __NR_getuid     24   /* 4024 */
+#define __NR_kill       37   /* 4037 */
+#define __NR_mkdir      39   /* 4039 */
+#define __NR_rmdir      40   /* 4040 */
+#define __NR_dup        41   /* 4041 */
+#define __NR_pipe       42   /* 4042 */
+#define __NR_brk        45   /* 4045 */
+#define __NR_ioctl      54   /* 4054 */
+#define __NR_mmap       90   /* 4090 (旧 mmap, 现代使用 mmap2=4210) */
+#define __NR_munmap     91   /* 4091 */
+#define __NR_mprotect  125   /* 4125 */
+#define __NR_socket   183   /* 4183 */
+#define __NR_bind     184   /* 4184 */
+#define __NR_connect  185   /* 4185 */
+#define __NR_listen   186   /* 4186 */
+#define __NR_accept   187   /* 4187 */
 ```
+
+> 其他 ABI: N64 基址 5000, N32 基址 6000; 少数旧表也可能显示“4011”直接给出真实号。利用时务必确认 glibc / qemu 使用的 ABI (此项目为 O32)。
 
 ### 系统调用约定
 

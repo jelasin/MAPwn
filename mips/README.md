@@ -65,50 +65,68 @@ HI      : 乘法/除法结果高位
 LO      : 乘法/除法结果低位
 ```
 
+## 字节序
+
+MIPS (big-endian) 与 MIPSEL (little-endian) 主要区别在内存中字节排列, 上层寄存器与 ABI 规则相同。Exploit/调试跨端时注意:
+
+```text
+值: 0x11223344
+MIPS   (BE) 存储: 11 22 33 44 (按地址递增)
+MIPSEL (LE) 存储: 44 33 22 11
+```
+
+影响:
+
+1. 利用填充时 little-endian 需要按字节逆序写入 32 位立即数。
+2. 在 gdb / hexdump 里解读栈内容要区分端序, 否则计算覆盖地址出错。
+3. ROP 链在 MIPSEL 下 `p32(0x4007C8)` 生成字节序列  C8 07 40 00, 在 BE 则需人工注意展示顺序。
+
 ## Linux MIPS 系统调用表
 
-### 常用系统调用号
+### 常用系统调用号 (偏移 / 实际 O32 号)
+
+> 与 MIPSEL 一样, O32 ABI 真实号 = 4000 + 偏移; 下表保留偏移并在注释列写出实际值。
 
 ```c
-#define __NR_syscall                 0
-#define __NR_exit                    1
-#define __NR_fork                    2
-#define __NR_read                    3
-#define __NR_write                   4
-#define __NR_open                    5
-#define __NR_close                   6
-#define __NR_waitpid                 7
-#define __NR_creat                   8
-#define __NR_link                    9
-#define __NR_unlink                 10
-#define __NR_execve                 11
-#define __NR_chdir                  12
-#define __NR_time                   13
-#define __NR_mknod                  14
-#define __NR_chmod                  15
-#define __NR_lchown                 16
-#define __NR_lseek                  19
-#define __NR_getpid                 20
-#define __NR_mount                  21
-#define __NR_umount                 22
-#define __NR_setuid                 23
-#define __NR_getuid                 24
-#define __NR_kill                   37
-#define __NR_mkdir                  39
-#define __NR_rmdir                  40
-#define __NR_dup                    41
-#define __NR_pipe                   42
-#define __NR_brk                    45
-#define __NR_ioctl                  54
-#define __NR_mmap                   90
-#define __NR_munmap                 91
-#define __NR_mprotect              125
-#define __NR_socket                183
-#define __NR_bind                  184
-#define __NR_connect               185
-#define __NR_listen                186
-#define __NR_accept                187
+#define __NR_O32_Linux              4000
+#define __NR_read        3   /* 4003 */
+#define __NR_write       4   /* 4004 */
+#define __NR_open        5   /* 4005 */
+#define __NR_close       6   /* 4006 */
+#define __NR_waitpid     7   /* 4007 */
+#define __NR_creat       8   /* 4008 */
+#define __NR_link        9   /* 4009 */
+#define __NR_unlink     10   /* 4010 */
+#define __NR_execve     11   /* 4011 */
+#define __NR_chdir      12   /* 4012 */
+#define __NR_time       13   /* 4013 */
+#define __NR_mknod      14   /* 4014 */
+#define __NR_chmod      15   /* 4015 */
+#define __NR_lchown     16   /* 4016 */
+#define __NR_lseek      19   /* 4019 */
+#define __NR_getpid     20   /* 4020 */
+#define __NR_mount      21   /* 4021 */
+#define __NR_umount     22   /* 4022 */
+#define __NR_setuid     23   /* 4023 */
+#define __NR_getuid     24   /* 4024 */
+#define __NR_kill       37   /* 4037 */
+#define __NR_mkdir      39   /* 4039 */
+#define __NR_rmdir      40   /* 4040 */
+#define __NR_dup        41   /* 4041 */
+#define __NR_pipe       42   /* 4042 */
+#define __NR_brk        45   /* 4045 */
+#define __NR_ioctl      54   /* 4054 */
+#define __NR_mmap       90   /* 4090 */
+#define __NR_munmap     91   /* 4091 */
+#define __NR_mprotect  125   /* 4125 */
+#define __NR_socket   183   /* 4183 */
+#define __NR_bind     184   /* 4184 */
+#define __NR_connect  185   /* 4185 */
+#define __NR_listen   186   /* 4186 */
+#define __NR_accept   187   /* 4187 */
 ```
+
+> N64 / N32 ABI: 基址分别 5000 / 6000。利用时请用反汇编或头文件确认。
 
 ### 系统调用约定
 

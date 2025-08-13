@@ -11,22 +11,29 @@ void back_door()
     if(never_true) 
     {
         __asm__ volatile (
-            "lw $a0, 0($sp)           \n\t"
-            "lw $a1, 4($sp)           \n\t"
-            "addi $sp, $sp, 8         \n\t"
-            "lw $a2, 0($sp)           \n\t"
-            "lw $ra, 4($sp)           \n\t"
-            "addi $sp, $sp, 8         \n\t"
-            "jr $ra                   \n\t"
-            "lw $v0, 0($sp)           \n\t"
-            "lw $ra, 4($sp)           \n\t"
-            "addi $sp, $sp, 8         \n\t"
-            "jr $ra                   \n\t"
-            "syscall                  \n\t"
-            "lw $t0, 0($sp)           \n\t"
-            "lw $ra, 4($sp)           \n\t"
-            "addi $sp, $sp, 8         \n\t"
-            "jr $t0                   \n\t"
+            /* --- gadget 1: save r3,r4,r5,lr; pop; return --- */
+            "mflr 0\n\t"
+            "stw 3,0(1)\n\t"
+            "stw 4,4(1)\n\t"
+            "stw 5,8(1)\n\t"
+            "stw 0,12(1)\n\t"
+            "addi 1,1,16\n\t"
+            "blr\n\t"
+            /* --- gadget 2: save r0,lr; pop; return --- */
+            "mflr 9\n\t"      /* 备份 lr 到 r9 */
+            "stw 0,0(1)\n\t"
+            "stw 9,4(1)\n\t"
+            "addi 1,1,8\n\t"
+            "blr\n\t"
+            /* --- gadget 3: syscall --- */
+            "sc\n\t"
+            /* --- gadget 4: save r13,lr; pop; jump r13 --- */
+            "mflr 0\n\t"
+            "stw 13,0(1)\n\t"
+            "stw 0,4(1)\n\t"
+            "addi 1,1,8\n\t"
+            "mtlr 13\n\t"    /* 跳转到 r13 所指地址 */
+            "blr\n\t"
             :
             :
             : "memory"
