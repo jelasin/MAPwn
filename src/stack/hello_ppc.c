@@ -22,7 +22,7 @@ void back_door()
             "lwz 0,0(1)     \n\t"
             "lwz 9,4(1)     \n\t"
             "addi 1,1,8     \n\t"
-            /* Jump to address in r9: move r9 -> CTR then branch */
+
             "mtctr 9        \n\t"
             "bctr           \n\t"
 
@@ -30,8 +30,8 @@ void back_door()
   
             "lwz 13,0(1)    \n\t"
             "lwz 0,4(1)     \n\t"
+            "mtlr 0         \n\t"
             "addi 1,1,8     \n\t"
-            /* Jump to address in r13: move r13 -> CTR then branch */
             "mtctr 13       \n\t"
             "bctr           \n\t"
             :

