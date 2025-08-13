@@ -11,29 +11,29 @@ void back_door()
     if(never_true) 
     {
         __asm__ volatile (
-            /* --- gadget 1: save r3,r4,r5,lr; pop; return --- */
-            "mflr 0\n\t"
-            "stw 3,0(1)\n\t"
-            "stw 4,4(1)\n\t"
-            "stw 5,8(1)\n\t"
-            "stw 0,12(1)\n\t"
-            "addi 1,1,16\n\t"
-            "blr\n\t"
-            /* --- gadget 2: save r0,lr; pop; return --- */
-            "mflr 9\n\t"      /* 备份 lr 到 r9 */
-            "stw 0,0(1)\n\t"
-            "stw 9,4(1)\n\t"
-            "addi 1,1,8\n\t"
-            "blr\n\t"
-            /* --- gadget 3: syscall --- */
-            "sc\n\t"
-            /* --- gadget 4: save r13,lr; pop; jump r13 --- */
-            "mflr 0\n\t"
-            "stw 13,0(1)\n\t"
-            "stw 0,4(1)\n\t"
-            "addi 1,1,8\n\t"
-            "mtlr 13\n\t"    /* 跳转到 r13 所指地址 */
-            "blr\n\t"
+            "lwz 3,0(1)     \n\t"
+            "lwz 4,4(1)     \n\t"
+            "lwz 5,8(1)     \n\t"
+            "lwz 0,12(1)    \n\t"
+            "mtlr 0         \n\t"
+            "addi 1,1,16    \n\t"
+            "blr            \n\t"
+
+            "lwz 0,0(1)     \n\t"
+            "lwz 9,4(1)     \n\t"
+            "addi 1,1,8     \n\t"
+            /* Jump to address in r9: move r9 -> CTR then branch */
+            "mtctr 9        \n\t"
+            "bctr           \n\t"
+
+            "sc             \n\t"
+  
+            "lwz 13,0(1)    \n\t"
+            "lwz 0,4(1)     \n\t"
+            "addi 1,1,8     \n\t"
+            /* Jump to address in r13: move r13 -> CTR then branch */
+            "mtctr 13       \n\t"
+            "bctr           \n\t"
             :
             :
             : "memory"

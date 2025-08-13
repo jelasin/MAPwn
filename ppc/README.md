@@ -327,6 +327,108 @@ PowerPC 指令主要分为以下几种格式：
 | bgt | bgt target | if CR[GT] then PC = target | `bgt positive` | 大于则分支 |
 | ble | ble target | if !CR[GT] then PC = target | `ble nonpos` | 小于等于则分支 |
 | bge | bge target | if !CR[LT] then PC = target | `bge nonneg` | 大于等于则分支 |
+| bctr | bctr | PC = CTR | `bctr` | 跳转到计数寄存器 (间接) |
+| bctrl | bctrl | LR = PC+4; PC = CTR | `bctrl` | 跳转到 CTR 并保存返回地址 |
+| blrl | blrl | (保存 LR)；PC = 旧LR | `blrl` | 罕用，等价于 `blr`+link，某些汇编器提供 |
+
+### 间接 / 寄存器跳转详解
+
+在 PowerPC 上不能像 x86 那样写 `jmp r9`；需要借助 CTR 或 LR：
+
+1. 使用计数寄存器 CTR (推荐的通用间接跳转方式)
+
+```assembly
+mtctr r9     ; 将 r9 中地址放入 CTR
+bctr         ; 跳转到 r9 指向的地址 (不修改 LR)
+
+mtctr r9
+bctrl        ; 跳转到 r9，同时把返回地址保存到 LR
+```
+
+1. 使用链接寄存器 LR (更像“调用/返回”风格)
+
+```assembly
+mtlr r9      ; 将 r9 中地址写入 LR
+blr          ; 跳转到 r9 (因为 PC=LR)
+
+mtlr r9
+blrl         ; 同时把下一条指令地址写回 LR (形成链式调用)
+```
+
+1. 跳转到 r13 同理：
+
+```assembly
+mtctr r13
+bctr          ; 或 bctrl 保存调用点
+
+mtlr r13
+blr           ; 或 blrl 保存调用点
+```
+
+对比：
+
+| 方式 | 指令序列 | 是否写 LR | 典型用途 | 利弊 |
+|------|----------|-----------|----------|------|
+| CTR 间接 (不留返回) | mtctr Rx; bctr  | 否 | 纯跳转 / pivot | 不污染 LR；像无返回跳转 |
+| CTR 调用 | mtctr Rx; bctrl | 是 | 间接“调用” | 生成可控返回地址 (ROP/JOP 混合) |
+| LR 间接 (返回语义) | mtlr Rx; blr    | 否 | 模拟 ret/gadget | 要先保存原 LR；不新建 link |
+| LR 调用链 | mtlr Rx; blrl   | 是 | 少见；嵌套链式 | 依赖汇编器支持；可混淆控制流 |
+
+注意事项：
+
+* 指令宽度固定 4 字节，`b label` 的 label 需汇编期解析；`b 9` 这样的立即数字面量既非符号又非对齐编码 → 汇编报 “operand out of domain”。
+* 不能直接写 `b r9`；必须 `mtctr r9; bctr` 或 `mtlr r9; blr`。
+* `bctr` 与 `blr` 都是无条件分支，不会自动清理栈；调用者/被调用者栈维护要手动完成。
+* Exploit 场景中寻找现成 gadget：常见片段如 `mtctr rX; bctr`, `mtlr rX; blr`, `lwz rX,disp(rY); mtctr rX; bctr`，可实现 JOP 链。
+* 若需要保存原 LR 以免破坏返回序列，可在使用前 `mflr r0; stw r0,off(r1)`，结束后恢复。
+* `bctrl` 会把下一条指令地址写入 LR，可以把它当作“call *reg” 的语义；后续可用 `blr` 返回。
+* 某些安全特性 (e.g. ELFv2 ABI / 指针认证(在某些变体)/CFI) 可能关注间接调用点，手工合成序列时要与 ABI 预期一致（例如保持 r2/toc 不被破坏）。
+
+最简“跳到 r9” 代码模板：
+
+```assembly
+mtctr r9
+bctr
+```
+
+最简“调用 r9 并可返回” 代码模板：
+
+```assembly
+mtctr r9    ; 或 mtlr r9
+bctrl       ; 若希望返回地址在 LR
+; ......
+blr         ; 返回到调用者
+```
+
+或使用 LR 路径：
+
+```assembly
+mtlr r9
+blr         ; 无新 link (相当于 tail jump)
+```
+
+调试建议：
+
+* 用 `objdump -d` 确认 gadget 是否存在：`grep -i "mtctr"` / `grep -i "bctr"`。
+* GDB 下可用 `si` 单步观察 CTR/LR 的变化：`info registers ctr lr`。
+* 若跳转地址未对齐（非 4 字节边界）会触发对齐异常；确保寄存器内地址末两位为 0。
+
+常见坑：
+
+1. 忘记把控制转移目标写入 CTR/LR，就直接执行 bctr/blr → 跳到旧地址。
+2. 使用 bctrl 时未保存/期望原 LR，导致后续返回链断裂。
+3. 泄漏/构造地址时忽略字节序 (PowerPC big-endian)，利用时写入的字节序混乱。
+4. Smash 栈覆盖 r1 回链结构时，未同时准备一个可执行/可读的受控栈区域，造成崩溃。
+
+与 x86 对比速记：
+
+| x86 指令 | 语义 | PowerPC 等价概念 |
+|----------|------|------------------|
+| jmp *reg | 无返回跳转 | mtctr rX; bctr |
+| call *reg | 保存返回地址并跳转 | mtctr rX; bctrl |
+| ret | 弹栈返回 | (lwz r0,off(r1); mtlr r0; addi r1,r1,frame; blr) 组合 |
+
+这样即可在 README 中完整覆盖“如何跳到 r9 / r13” 及相关间接跳转实践。
 
 #### 特殊指令
 
