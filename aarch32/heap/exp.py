@@ -24,14 +24,43 @@ io: tube = gift.io
 elf: ELF = gift.elf
 libc: ELF = gift.libc
 
-# one_gadgets: list = get_current_one_gadget_from_libc(more=False)
-# CurrentGadgets.set_find_area(find_in_elf=True, find_in_libc=False, do_initial=False)
-
 def debug(gdbscript="", stop=False):
     if isinstance(io, process):
         gdb.attach(io, gdbscript=gdbscript)
         if stop:
             pause()
+
+def decrypt_fastbin_fd(encrypted_fd, chunk_addr=None, bits=64, key=None):
+    """
+    解密fd指针
+    """
+    if key is None:
+        if chunk_addr is None:
+            raise ValueError("必须提供chunk_addr或key参数")
+        key = chunk_addr >> 12
+    
+    real_fd = encrypted_fd ^ key
+    
+    if bits == 32:
+        return real_fd & 0xffffffff
+    else:
+        return real_fd & 0xffffffffffffffff
+
+def encrypt_fastbin_fd(real_fd, chunk_addr=None, bits=64, key=None):
+    """
+    加密fd指针
+    """
+    if key is None:
+        if chunk_addr is None:
+            raise ValueError("必须提供chunk_addr或key参数")
+        key = chunk_addr >> 12
+    
+    encrypted_fd = real_fd ^ key
+    
+    if bits == 32:
+        return encrypted_fd & 0xffffffff
+    else:
+        return encrypted_fd & 0xffffffffffffffff
 
 def cmd(choice: str):
     ru('Enter your choice:\n')
@@ -40,27 +69,30 @@ def cmd(choice: str):
 def add(idx, size):
     cmd('1')
     ru('Enter index and size:\n')
-    sl(f"{idx} {size}\n")
+    s(f"{idx} {size}\n")
     ru('Memory allocated.\n')
 
 def dele(idx):
     cmd('2')
     ru('Enter index to free:')
-    sl(f"{idx}\n")
+    s(f"{idx}\n")
     ru('Memory freed.\n')
 
 def edit(idx, size, buf):
     cmd('3')
     ru('Enter index and size to edit:\n')
-    sl(f"{idx} {size}\n")
+    s(f"{idx} {size}\n")
     s(buf)
     ru('Memory edited.\n')
 
 def show(idx, size):
     cmd('4')
     ru('Enter index and size to show:\n')
-    sl(f"{idx} {size}\n")
+    s(f"{idx} {size}\n")
 
+def unlink_attack():
+    pass
 
+if __name__ == "__main__":
+    unlink_attack()
 
-ia()

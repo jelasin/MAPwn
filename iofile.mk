@@ -1,14 +1,14 @@
 ############################################################
-# Multi-architecture Makefile for HEAP 演示/利用二进制
-# 与 stack.mk 不同：这里开启常见编译期 / 运行期保护 ("保护全开")
+# Multi-architecture Makefile for IOFILE 演示/利用二进制
+# 保护全开版本 (Full RELRO)
 #
 # 启用的保护：
-#  - PIE:              位置无关可执行 (ASLR 充分)
+#  - PIE:              -fPIE / -pie
 #  - Stack Canary:     -fstack-protector-strong
-#  - RELRO (Partial):  -Wl,-z,relro   (不使用 -z,now => 非 Full)
-#  - NX:               默认开启（确保没有可执行栈）
-#  - Fortify:          -D_FORTIFY_SOURCE=2 (需要 -O2 及以上)
-#  - 有调试符号:       -g
+#  - RELRO (Full):     -Wl,-z,relro,-z,now
+#  - NX:               -Wl,-z,noexecstack (确保非可执行栈)
+#  - Fortify:          -D_FORTIFY_SOURCE=2 (需 -O2)
+#  - 调试符号:         -g
 ############################################################
 
 # 工具链根目录
@@ -56,74 +56,67 @@ RV64_CC       = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-gcc
 RV64_READELF  = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-readelf
 RV64_OBJDUMP  = $(RV64_TOOLCHAIN)/bin/riscv64-buildroot-linux-gnu-objdump
 
-# 通用编译 / 链接选项 (保护调整：使用 Partial RELRO；显式加 -z,lazy 避免被工具链默认 -z,now 变成 Full)
-# -Wl,-z,relro: 生成 GNU_RELRO 段
-# -Wl,-z,lazy : 强制延迟绑定 (确保非 Full RELRO)
+# 通用编译 / 链接选项 (Full RELRO)
 COMMON_CFLAGS  = -fPIE -fstack-protector-strong -O2 -g -D_FORTIFY_SOURCE=2
-COMMON_LDFLAGS = -Wl,-z,relro -Wl,-z,noexecstack -pie -Wl,-z,lazy
-# 若仍检测为 Full RELRO，请检查:
-#  1) 环境变量 LDFLAGS 是否含 -Wl,-z,now
-#  2) 交叉工具链 specs 是否默认追加 -z now (可用: $(ARMV7_CC) -dumpspecs | grep z,now)
+COMMON_LDFLAGS = -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 
-# 目标名称 (与 stack.mk 保持类似风格)
-heap_armv7   : aarch32/heap/heap
-heap_aarch64 : aarch64/heap/heap
-heap_mips    : mips/heap/heap
-heap_mipsel  : mipsel/heap/heap
-heap_ppc     : ppc/heap/heap
-heap_rv32    : riscv32/heap/heap
-heap_rv64    : riscv64/heap/heap
+# 目标名称
+iofile_armv7   : aarch32/iofile/iofile
+iofile_aarch64 : aarch64/iofile/iofile
+iofile_mips    : mips/iofile/iofile
+iofile_mipsel  : mipsel/iofile/iofile
+iofile_ppc     : ppc/iofile/iofile
+iofile_rv32    : riscv32/iofile/iofile
+iofile_rv64    : riscv64/iofile/iofile
 
 # =============== 各架构编译规则 ===============
-# 期望源文件：src/heap/heap_<arch>.c
-# 若暂不存在，可自行添加；当前仅提供 armv7 示例 (heap_armv7.c)
+# 源文件约定: src/iofile/iofile_<arch>.c  (示例: iofile_armv7.c)
 
-aarch32/heap/heap: src/heap/heap_armv7.c
-	@echo "[ARMv7] Building protected heap binary..."
-	@mkdir -p aarch32/heap
+aarch32/iofile/iofile: src/iofile/iofile_armv7.c
+	@echo "[ARMv7] Building FULL RELRO iofile binary..."
+	@mkdir -p aarch32/iofile
 	$(ARMV7_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[ARMv7] Done: $@"
 
-# 下面的规则若对应源文件缺失，会提示用户创建
-aarch64/heap/heap: src/heap/heap_aarch64.c
-	@echo "[AArch64] Building protected heap binary..."
+aarch64/iofile/iofile: src/iofile/iofile_aarch64.c
+	@echo "[AArch64] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p aarch64/heap
+	@mkdir -p aarch64/iofile
 	$(AARCH64_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[AArch64] Done: $@"
 
-mips/heap/heap: src/heap/heap_mips.c
-	@echo "[MIPS] Building protected heap binary..."
+mips/iofile/iofile: src/iofile/iofile_mips.c
+	@echo "[MIPS] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p mips/heap
+	@mkdir -p mips/iofile
 	$(MIPS_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[MIPS] Done: $@"
 
-mipsel/heap/heap: src/heap/heap_mipsel.c
-	@echo "[MIPSEL] Building protected heap binary..."
+mipsel/iofile/iofile: src/iofile/iofile_mipsel.c
+	@echo "[MIPSEL] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p mipsel/heap
+	@mkdir -p mipsel/iofile
 	$(MIPSEL_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[MIPSEL] Done: $@"
 
-ppc/heap/heap: src/heap/heap_ppc.c
-	@echo "[PPC] Building protected heap binary..."
+ppc/iofile/iofile: src/iofile/iofile_ppc.c
+	@echo "[PPC] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p ppc/heap
+	@mkdir -p ppc/iofile
 	$(PPC_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[PPC] Done: $@"
 
-riscv32/heap/heap: src/heap/heap_rv32.c
-	@echo "[RV32] Building protected heap binary..."
+riscv32/iofile/iofile: src/iofile/iofile_rv32.c
+	@echo "[RV32] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p riscv32/heap
+	@mkdir -p riscv32/iofile
 	$(RV32_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[RV32] Done: $@"
 
-riscv64/heap/heap: src/heap/heap_rv64.c
-	@echo "[RV64] Building protected heap binary..."
+riscv64/iofile/iofile: src/iofile/iofile_rv64.c
+	@echo "[RV64] Building FULL RELRO iofile binary..."
 	@if [ ! -f $< ]; then echo "Source $< missing. Create it first."; exit 1; fi
-	@mkdir -p riscv64/heap
+	@mkdir -p riscv64/iofile
 	$(RV64_CC) $(COMMON_CFLAGS) -o $@ $< $(COMMON_LDFLAGS)
 	@echo "[RV64] Done: $@"
 
@@ -133,7 +126,7 @@ define show_binary_info
 	@if [ -f "$(1)" ]; then \
 		file $(1); \
 		echo "-- Canary:"; \
-		$(2) -s $(1) | grep -E "__stack_chk_fail|__stack_chk_guard" >/dev/null 2>&1 && echo "  Stack canary PRESENT" || echo "  Stack canary NOT found (unexpected)"; \
+		$(2) -s $(1) | grep -E "__stack_chk_fail|__stack_chk_guard" >/dev/null 2>&1 && echo "  Stack canary PRESENT" || echo "  Stack canary NOT found"; \
 		echo "-- PIE:"; \
 		$(2) -h $(1) | grep "Type:" | grep -q DYN && echo "  PIE enabled (DYN)" || echo "  Not PIE"; \
 		echo "-- RELRO:"; \
@@ -149,32 +142,30 @@ define show_binary_info
 endef
 
 info:
-	$(call show_binary_info,aarch32/heap/heap,$(ARMV7_READELF),$(ARMV7_OBJDUMP))
-	$(call show_binary_info,aarch64/heap/heap,$(AARCH64_READELF),$(AARCH64_OBJDUMP))
-	$(call show_binary_info,mips/heap/heap,$(MIPS_READELF),$(MIPS_OBJDUMP))
-	$(call show_binary_info,mipsel/heap/heap,$(MIPSEL_READELF),$(MIPSEL_OBJDUMP))
-	$(call show_binary_info,ppc/heap/heap,$(PPC_READELF),$(PPC_OBJDUMP))
-	$(call show_binary_info,riscv32/heap/heap,$(RV32_READELF),$(RV32_OBJDUMP))
-	$(call show_binary_info,riscv64/heap/heap,$(RV64_READELF),$(RV64_OBJDUMP))
+	$(call show_binary_info,aarch32/iofile/iofile,$(ARMV7_READELF),$(ARMV7_OBJDUMP))
+	$(call show_binary_info,aarch64/iofile/iofile,$(AARCH64_READELF),$(AARCH64_OBJDUMP))
+	$(call show_binary_info,mips/iofile/iofile,$(MIPS_READELF),$(MIPS_OBJDUMP))
+	$(call show_binary_info,mipsel/iofile/iofile,$(MIPSEL_READELF),$(MIPSEL_OBJDUMP))
+	$(call show_binary_info,ppc/iofile/iofile,$(PPC_READELF),$(PPC_OBJDUMP))
+	$(call show_binary_info,riscv32/iofile/iofile,$(RV32_READELF),$(RV32_OBJDUMP))
+	$(call show_binary_info,riscv64/iofile/iofile,$(RV64_READELF),$(RV64_OBJDUMP))
 
 # 一键编译（存在的源才能成功）
-all: heap_armv7 heap_aarch64 heap_mips heap_mipsel heap_ppc heap_rv32 heap_rv64
+all: iofile_armv7 iofile_aarch64 iofile_mips iofile_mipsel iofile_ppc iofile_rv32 iofile_rv64
 
-# 清理
 clean:
-	@echo "Cleaning heap binaries..."
-	@rm -f aarch32/heap/heap aarch64/heap/heap mips/heap/heap mipsel/heap/heap ppc/heap/heap riscv32/heap/heap riscv64/heap/heap
+	@echo "Cleaning iofile binaries..."
+	@rm -f aarch32/iofile/iofile aarch64/iofile/iofile mips/iofile/iofile mipsel/iofile/iofile ppc/iofile/iofile riscv32/iofile/iofile riscv64/iofile/iofile
 	@echo "Done."
 
 help:
-	@echo "Multi-architecture HEAP Makefile (protections ENABLED)"
+	@echo "Multi-architecture IOFILE Makefile (Full protections)"
 	@echo "Targets:"
-	@echo "  heap_armv7 / heap_aarch64 / heap_mips / heap_mipsel / heap_ppc / heap_rv32 / heap_rv64"
+	@echo "  iofile_armv7 / iofile_aarch64 / iofile_mips / iofile_mipsel / iofile_ppc / iofile_rv32 / iofile_rv64"
 	@echo "  all          - build all (only succeeds where sources exist)"
 	@echo "  clean        - remove built binaries"
 	@echo "  info         - show security feature summary"
-	@echo "Source naming convention: src/heap/heap_<arch>.c (e.g. heap_armv7.c)"
-	@echo "Protections enabled: PIE, Stack Canary, Partial RELRO (lazy), NX, Fortify"
+	@echo "Source naming: src/iofile/iofile_<arch>.c"
+	@echo "Protections enabled: PIE, Stack Canary, Full RELRO, NX, Fortify"
 
-.PHONY: heap_armv7 heap_aarch64 heap_mips heap_mipsel heap_ppc heap_rv32 heap_rv64 all clean info help
-.PHONY: heap_armv7 heap_aarch64 heap_mips heap_mipsel heap_ppc heap_rv32 heap_rv64 all clean info help
+.PHONY: iofile_armv7 iofile_aarch64 iofile_mips iofile_mipsel iofile_ppc iofile_rv32 iofile_rv64 all clean info help
