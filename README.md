@@ -35,7 +35,7 @@ drwxr-xr-x 9 ub24 ub24 4.0K Aug 18  2024 riscv64-lp64d--glibc--stable-2024.05-1
 
 以armv7-eabihf为例:
 
-```text
+```bash
 ➜  stack git:(master) ✗ ls -lh
 total 40K
 -rw-r--r-- 1 ub24 ub24  14K Jul 30 16:18 README.md
@@ -47,10 +47,46 @@ lrwxrwxrwx 1 ub24 ub24   91 Jul 30 17:56 lib -> ../../toolchain/armv7-eabihf--gl
 
 ## stack
 
-arch 取值为 `armv7`, `aarch64`, `mips`, `mipsel`, `ppc`, `rv32`, `rv64`。
+```bash
+(.vnev) ➜  MAPwn git:(master) ✗ make -f stack.mk help 
+Multi-architecture Stack Exploitation Makefile
 
-其中 armv7 为对应 aarch32 的子目录。
+Available targets:
+  hello_armv7   - Compile for ARM v7 (32-bit)
+  hello_aarch64 - Compile for ARM v8 (64-bit)
+  hello_mips    - Compile for MIPS (32-bit big endian)
+  hello_mipsel  - Compile for MIPS (32-bit little endian)
+  hello_ppc     - Compile for PowerPC
+  hello_rv32    - Compile for RISC-V 32-bit
+  hello_rv64    - Compile for RISC-V 64-bit
+  all           - Compile for all architectures
+  clean         - Remove all compiled binaries
+  info          - Show binary information and security features
+  help          - Show this help message
+
+Source files expected:
+  src/stack/hello_armv7.c   (exists)
+  src/stack/hello_aarch64.c (exists)
+  src/stack/hello_mips.c    (exists)
+  src/stack/hello_mipsel.c  (exists)
+  src/stack/hello_ppc.c     (exists)
+  src/stack/hello_rv32.c    (exists)
+  src/stack/hello_rv64.c    (exists)
+```
+
+## heap
+
+* glibc version == 2.39
+* glibc.malloc.tcache_count=0
 
 ```bash
-make -f stack.mk {arch}
+(.vnev) ➜  MAPwn git:(master) ✗ make -f heap.mk help
+Multi-architecture HEAP Makefile (protections ENABLED)
+Targets:
+  heap_armv7 / heap_aarch64 / heap_mips / heap_mipsel / heap_ppc / heap_rv32 / heap_rv64
+  all          - build all (only succeeds where sources exist)
+  clean        - remove built binaries
+  info         - show security feature summary
+Source naming convention: src/heap/heap_<arch>.c (e.g. heap_armv7.c)
+Protections enabled: PIE, Stack Canary, Full RELRO, NX, Fortify
 ```

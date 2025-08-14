@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <malloc.h>
 
 char * heap_arr[0x10];
 
@@ -48,6 +49,7 @@ int main()
     while (true)
     {
         puts("1. alloc\n2. free\n3. edit\n4. show\n5. exit");
+        puts("Enter your choice:");
         char choice[0x10];
         size_t idx, size;
         ssize_t nbytes = 0;
