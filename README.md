@@ -19,7 +19,7 @@ drwxr-xr-x 6 ub24 ub24 4.0K Jul 29 17:44 riscv32
 drwxr-xr-x 6 ub24 ub24 4.0K Jul 29 17:44 riscv64
 drwxr-xr-x 6 ub24 ub24 4.0K Jul 29 17:43 src
 drwxr-xr-x 9 ub24 ub24 4.0K Jul 29 18:20 toolchain
-# 工具链
+# 工具链 glibc-2.39
 ➜  toolchain git:(master) ✗ ls -lh 
 total 28K
 drwxr-xr-x 9 ub24 ub24 4.0K Aug 17  2024 aarch64--glibc--stable-2024.05-1
