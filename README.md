@@ -90,3 +90,20 @@ Targets:
 Source naming convention: src/heap/heap_<arch>.c (e.g. heap_armv7.c)
 Protections enabled: PIE, Stack Canary, Full RELRO, NX, Fortify
 ```
+
+## iofile
+
+* glibc version == 2.39
+* glibc.malloc.tcache_count=0
+
+```bash
+(.vnev) ➜  MAPwn git:(master) ✗ make -f iofile.mk help
+Multi-architecture IOFILE Makefile (Full protections)
+Targets:
+  iofile_armv7 / iofile_aarch64 / iofile_mips / iofile_mipsel / iofile_ppc / iofile_rv32 / iofile_rv64
+  all          - build all (only succeeds where sources exist)
+  clean        - remove built binaries
+  info         - show security feature summary
+Source naming: src/iofile/iofile_<arch>.c
+Protections enabled: PIE, Stack Canary, Full RELRO, NX, Fortify
+```
