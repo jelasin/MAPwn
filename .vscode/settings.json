@@ -1,6 +1,3 @@
 {
-    "files.associations": {
-        "*.c": "c",
-        "stdlib.h": "c"
-    }
+    "makefile.makefilePath": "/home/ub24/MAPwn/src/kernel/aarch32/Makefile"
 }
